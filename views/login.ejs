@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Panel Girişi</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #222; color: white; text-align: center; padding: 50px;}
+    input, button { font-size: 1rem; padding: 10px; margin: 10px 0; width: 300px; }
+    button { cursor: pointer; background: #1a73e8; color: white; border: none; border-radius: 5px; }
+    .error { color: #ff5555; }
+  </style>
+</head>
+<body>
+  <h1>Guard Panel Girişi</h1>
+  <% if (error) { %>
+    <p class="error"><%= error %></p>
+  <% } %>
+  <form action="/panel-login" method="POST">
+    <input type="text" name="userId" placeholder="Discord Kullanıcı ID" required /><br />
+    <input type="text" name="password" placeholder="Geçici Şifre" required /><br />
+    <button type="submit">Giriş Yap</button>
+  </form>
+</body>
+</html>

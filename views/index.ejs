@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Guard Bot Web Paneli</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" rel="stylesheet" />
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #eventCalendar {
+            background-color: #1c1c1c;
+            border-radius: 12px;
+            padding: 20px;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(0, 255, 120, 0.2);
+        }
+
+        /* FullCalendar kendi sınıflarına müdahaleler */
+        .fc {
+            background-color: transparent !important;
+            color: #eee !important;
+        }
+
+        .fc-daygrid-day-number {
+            color: #3a86ff !important;
+            font-weight: 600;
+        }
+
+        .fc-event {
+            border: none;
+            padding: 2px 6px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+        }
+
+        .fc-toolbar-title {
+            font-size: 1.3rem;
+            color: #00d9ff;
+        }
+
+        .fc-button {
+            background-color: #3a86ff;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 6px;
+        }
+
+        .fc-button:hover {
+            background-color: #265ecf;
+        }
+
+        .guard-settings-panel {
+            display: flex;
+            gap: 30px;
+            font-family: Arial, sans-serif;
+        }
+
+        #settingsList {
+            flex: 1;
+        }
+
+        .setting-item {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .setting-label {
+            font-weight: bold;
+        }
+
+        .btn-toggle {
+            padding: 6px 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        /* Checkbox container */
+        form#roleForm label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-right: 15px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            color: #ddd;
+            font-weight: 600;
+            user-select: none;
+            transition: color 0.3s ease;
+        }
+
+        /* Checkbox input (gizle) */
+        form#roleForm input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            background-color: #222;
+            border: 2px solid #555;
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+
+        form#roleForm input[type="checkbox"]:checked {
+            background-color: #3a86ff;
+            border-color: #3a86ff;
+        }
+
+
+        form#roleForm input[type="checkbox"]:checked::after {
+            content: "✓";
+            color: white;
+            position: absolute;
+            top: 1px;
+            left: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+
+        form#roleForm label:hover {
+            color: #3a86ff;
+        }
+
+
+        form#roleForm button[type="submit"] {
+            background-color: #3a86ff;
+            border: none;
+            color: white;
+            font-weight: 700;
+            padding: 6px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        form#roleForm button[type="submit"]:hover {
+            background-color: #265ecf;
+        }
+
+        #activeSettings {
+            width: 220px;
+            background-color: #1a1a1a;
+
+            color: #fff;
+
+            border-radius: 8px;
+            padding: 15px 20px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.15);
+
+        }
+
+        #activeSettings h4 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 16px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+        }
+
+        #activeSettings ul {
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
+        }
+
+        #activeSettings ul li {
+            padding: 6px 0;
+            color: #eee;
+
+            border-bottom: 1px solid #333;
+        }
+
+        #activeSettings ul li:last-child {
+            border-bottom: none;
+        }
+
+        #activeSettings ul li::before {
+            content: "✔ ";
+            color: #0f0;
+        }
+
+
+
+
+        .btn-toggle.active {
+            background-color: #222;
+
+            color: #eee;
+
+            box-shadow: 0 0 6px #0f0;
+
+        }
+
+
+        .btn-toggle.inactive {
+            background-color: #eee;
+
+            color: #333;
+
+            box-shadow: none;
+        }
+
+
+        h1,
+        h3,
+        h4,
+        p,
+        code,
+        div {
+            color: #ffffff;
+        }
+
+        .container {
+            margin-top: 40px;
+            max-width: 900px;
+        }
+
+        .card {
+            background-color: #1e1e1e;
+            border: none;
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-primary {
+            background-color: #3a86ff;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #265ecf;
+        }
+
+        .btn-danger {
+            border: none;
+        }
+
+        .btn-secondary {
+            border: none;
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 10px;
+            border: 2px solid #3a86ff;
+        }
+
+        .user-list-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .user-card {
+            background: linear-gradient(135deg, #2a2a72, #009ffd);
+            color: #fff;
+            width: 180px;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 6px 12px rgba(0, 159, 253, 0.4);
+            position: relative;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: default;
+
+
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 24px rgba(0, 159, 253, 0.7);
+        }
+
+        .btn-remove-safe-user {
+            padding: 6px 8px;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+
+
+        .user-card .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            object-fit: cover;
+            display: block;
+            flex-shrink: 0;
+        }
+
+
+
+        .user-info {
+            font-size: 0.9rem;
+            line-height: 1.2;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            flex-grow: 1;
+        }
+
+        .user-info .username {
+            font-weight: 700;
+        }
+
+        .user-info .userid {
+            font-family: monospace;
+            font-size: 0.8rem;
+            opacity: 0.75;
+        }
+
+
+
+        .btn-remove-safe-user {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 4px 7px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        .status-message {
+            margin-top: 15px;
+            font-weight: bold;
+            min-height: 24px;
+        }
+
+        .guard-settings-panel {
+            margin-top: 30px;
+
+        }
+
+        #guardStatus {
+            font-weight: 600;
+            padding: 5px 12px;
+            font-size: 1rem;
+        }
+
+        #safeUsersList {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: start;
+        }
+
+        #roleCardsContainer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .role-card {
+            background: linear-gradient(135deg, #1f1f1f, #2a2a2a);
+            border-left: 6px solid #3a86ff;
+            border-radius: 8px;
+            padding: 12px 16px;
+            width: 280px;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s;
+        }
+
+        .role-card:hover {
+            transform: scale(1.03);
+        }
+
+        .role-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .role-color {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .permissions-list {
+            font-size: 0.85rem;
+            margin-top: 5px;
+            line-height: 1.4;
+            color: #ccc;
+        }
+
+        .log-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: #1e1e1e;
+            color: #f0f0f0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .log-table th,
+        .log-table td {
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        .log-table th {
+            background-color: #2c2c2c;
+            color: #ddd;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-bottom: 1px solid #444;
+        }
+
+        .log-table tr:nth-child(even) {
+            background-color: #2a2a2a;
+        }
+
+        .log-table tr:nth-child(odd) {
+            background-color: #242424;
+        }
+
+        .log-time {
+            font-size: 0.85rem;
+            color: #999;
+        }
+
+        .log-description {
+            font-size: 0.92rem;
+            color: #e0e0e0;
+        }
+    </style>
+</head>
+
+
+
+<body>
+
+    <div class="container">
+        <h1 class="mb-4"><i class="fa-solid fa-shield-halved"></i> Guard Bot Web Paneli</h1>
+
+        <!-- Bot Profil -->
+        <div class="card d-flex align-items-center flex-row gap-3">
+            <img src="<%= botAvatar %>" alt="Bot Avatar" class="avatar" />
+            <div>
+                <h4>
+                    <%= botUsername %>
+                </h4>
+                <p>ID: <%= botId %>
+                </p>
+                <p>Status: <span id="guardStatus" class="badge 
+  <%= guardEnabled ? 'bg-success' : 'bg-danger' %>">
+                        <%= guardEnabled ? 'Aktif' : 'Pasif' %>
+                    </span></p>
+
+            </div>
+        </div>
+        <div class="user-server-info">
+            <div class="server-card">
+                <img src="<%= guild.iconURL %>" alt="Sunucu Iconu" class="server-icon" />
+                <div class="server-info">
+                    <h3><i class="fa-solid fa-server"></i>
+                        <%= guild.name %>
+                    </h3>
+                </div>
+            </div>
+
+            <div class="user-card-panel">
+                <img src="<%= user.avatar %>" alt="Avatar" class="user-avatar" />
+                <div class="user-details">
+                    <span class="user-tag"><i class="fa-solid fa-user"></i>
+                        <%= user.username %>#<%= user.discriminator %>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <style>
+            .user-server-info {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 30px;
+                margin: 30px 0;
+                padding: 20px;
+                border-radius: 12px;
+                background: #1e1e2f;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                flex-wrap: wrap;
+            }
+
+            .server-card,
+            .user-card-panel {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+            }
+
+            .server-icon,
+            .user-avatar {
+                width: 64px;
+                height: 64px;
+                border-radius: 50%;
+                border: 3px solid #5865F2;
+                box-shadow: 0 0 10px rgba(88, 101, 242, 0.4);
+            }
+
+            .server-info h3,
+            .user-details .user-tag {
+                margin: 0;
+                font-size: 1.2rem;
+                font-weight: bold;
+                color: #f0f0f0;
+            }
+
+            .user-tag i,
+            .server-info i {
+                color: #5865F2;
+                margin-right: 6px;
+            }
+        </style>
+
+
+        <div class="card mt-4">
+            <h3><i class="fa-solid fa-layer-group"></i> Sunucu Rolleri</h3>
+            <div id="roleCardsContainer" class="d-flex flex-wrap gap-3"></div>
+        </div>
+
+
+        <div class="card">
+            <div class="card role-management-card mt-4">
+                <h3><i class="fa-solid fa-user-gear"></i> Rol Yönetimi</h3>
+
+                <form id="roleForm" class="role-form d-flex flex-wrap gap-2 mb-3">
+                    <input type="text" id="roleName" placeholder="Rol adı" class="form-control" required />
+                    <input type="color" id="roleColor" value="#5865F2" title="Rol Rengi" class="color-picker" />
+
+                    <label><input type="checkbox" name="perm" value="ManageChannels" /> Kanal Yönetimi</label>
+                    <label><input type="checkbox" name="perm" value="KickMembers" /> Üyeleri At</label>
+                    <label><input type="checkbox" name="perm" value="BanMembers" /> Üyeleri Banla</label>
+                    <label><input type="checkbox" name="perm" value="Administrator" /> Yönetici</label>
+
+                    <button type="submit" class="btn btn-success ms-auto">Rol Ekle</button>
+                </form>
+
+                <div id="rolesContainer" class="roles-list d-flex flex-wrap gap-3"></div>
+            </div>
+
+            <table class="table table-dark table-striped">
+                <thead>
+                    <tr>
+                        <th>Rol</th>
+                        <th>Renk</th>
+                        <th>Yetkiler</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody id="rolesTableBody"></tbody>
+            </table>
+
+
+
+
+            <!-- İSTATİSTİK KARTLARI -->
+            <div class="row text-white" id="statsCards">
+                <div class="col-md-3">
+                    <div class="stat-card bg-primary">
+                        <i class="fa-solid fa-users fa-2x mb-2"></i>
+                        <h5>Toplam Üye</h5>
+                        <p id="totalMembers">Yükleniyor...</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-success">
+                        <i class="fa-solid fa-user fa-2x mb-2"></i>
+                        <h5>İnsanlar</h5>
+                        <p id="humans">Yükleniyor...</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-warning">
+                        <i class="fa-solid fa-robot fa-2x mb-2"></i>
+                        <h5>Botlar</h5>
+                        <p id="bots">Yükleniyor...</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-danger">
+                        <i class="fa-solid fa-headset fa-2x mb-2"></i>
+                        <h5>Sestekiler</h5>
+                        <p id="voiceMembers">Yükleniyor...</p>
+                    </div>
+                </div>
+            </div>
+
+            <style>
+                .stat-card {
+                    padding: 20px;
+                    border-radius: 12px;
+                    text-align: center;
+                    box-shadow: 0 0 10px rgba(0, 0, 0, 0.25);
+                    margin-bottom: 20px;
+                    transition: transform 0.3s ease;
+                }
+
+                .stat-card:hover {
+                    transform: scale(1.05);
+                }
+
+                .stat-card h5 {
+                    margin: 10px 0 5px;
+                }
+
+                .stat-card p {
+                    font-size: 1.5rem;
+                    font-weight: bold;
+                }
+            </style>
+            <script>
+                async function fetchLiveStats() {
+                    try {
+                        const res = await fetch('/api/live-stats');
+                        if (!res.ok) throw new Error('Sunucu hatası');
+                        const data = await res.json();
+
+                        document.getElementById('totalMembers').textContent = data.totalMembers;
+                        document.getElementById('bots').textContent = data.bots;
+                        document.getElementById('humans').textContent = data.humans;
+                        document.getElementById('voiceMembers').textContent = data.voiceChannelMembers;
+                    } catch (err) {
+                        console.error('Canlı istatistik alınamadı:', err);
+                    }
+                }
+
+
+                fetchLiveStats();
+
+
+                setInterval(fetchLiveStats, 25000);
+            </script>
+
+
+
+
+
+
+
+
+            <!-- Safe Kullanıcılar -->
+            <div class="card">
+                <h3><i class="fa-solid fa-users"></i> Safe Kullanıcılar (<%= safeUsers.length %>)</h3>
+
+
+                <form id="addSafeUserForm" class="mb-3 d-flex gap-2" onsubmit="return false;">
+                    <input type="text" id="safeUserIdInput" class="form-control" placeholder="Kullanıcı ID girin"
+                        required />
+                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-plus"></i> Ekle</button>
+                </form>
+
+                <% if (safeUsers.length===0) { %>
+                    <p>Safe listesi boş.</p>
+                    <% } else { %>
+
+                        <div id="safeUsersList">
+                            <% safeUsers.forEach(user=> { %>
+                                <div class="user-card" data-id="<%= user.id %>">
+                                    <button class="btn btn-sm btn-danger btn-remove-safe-user" data-id="<%= user.id %>"
+                                        title="Safe listesinden kaldır">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                    <img src="<%= user.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png' %>"
+                                        alt="Avatar" class="avatar" />
+                                    <div class="user-info">
+                                        <div class="username" title="<%= user.tag || 'Bilinmeyen Kullanıcı' %>">
+                                            <%= user.tag || 'Bilinmeyen Kullanıcı' %>
+                                        </div>
+                                        <div class="userid"><code><%= user.id %></code></div>
+                                    </div>
+                                </div>
+                                <% }) %>
+                        </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+                        <div class="guard-settings-panel">
+                            <h3>Guard Ayarları</h3>
+                            <div id="settingsList">
+                                <% ['kanalKoruma', 'rolKoruma' , 'emojiKoruma' , 'banKickKoruma' ].forEach(key=> { %>
+                                    <div class="setting-item" data-setting="<%= key %>">
+                                        <span class="setting-label">
+                                            <% if (key==='kanalKoruma' ) { %> Kanal Koruma <% } %>
+                                                    <% if (key==='rolKoruma' ) { %> Rol Koruma <% } %>
+                                                            <% if (key==='emojiKoruma' ) { %> Emoji Koruma <% } %>
+                                                                    <% if (key==='banKickKoruma' ) { %> Ban/Kick Koruma
+                                                                        <% } %>
+                                        </span>
+                                        <button class="btn-toggle <%= panel[key] ? 'active' : 'inactive' %>">
+                                            <%= panel[key] ? 'Açık' : 'Kapalı' %>
+                                        </button>
+                                    </div>
+                                    <% }) %>
+                            </div>
+
+                            <div id="activeSettings">
+                                <h4>Açık Olan Ayarlar</h4>
+                                <ul>
+                                    <% Object.entries(panel).forEach(([key, value])=> {
+                                        if (key !== 'guildID' && value) { %>
+                                        <li>
+                                            <% if (key==='kanalKoruma' ) { %> Kanal Koruma <% } %>
+                                                    <% if (key==='rolKoruma' ) { %> Rol Koruma <% } %>
+                                                            <% if (key==='emojiKoruma' ) { %> Emoji Koruma <% } %>
+                                                                    <% if (key==='banKickKoruma' ) { %> Ban/Kick Koruma
+                                                                        <% } %>
+                                        </li>
+                                        <% } }); %>
+                                            <% if (!panel.kanalKoruma && !panel.rolKoruma && !panel.emojiKoruma &&
+                                                !panel.banKickKoruma) { %>
+                                                <li>Hiçbir ayar aktif değil.</li>
+                                                <% } %>
+                                </ul>
+                            </div>
+
+                            <div id="statusMsg" class="status-message"></div>
+
+
+                            <div class="card mt-4">
+                                <h3><i class="fa-solid fa-scroll"></i> Log Kanalı Ayarları</h3>
+                                <form id="logChannelForm" action="/log-channel-settings" method="POST" class="mb-3">
+                                    <label for="channelID" class="form-label">Log Kanalını Seçin:</label>
+                                    <select name="channelID" id="channelID" required
+                                        class="form-select bg-dark text-light border-secondary">
+                                        <option value="">Kanal Seçiniz</option>
+                                        <% channels.forEach(channel=> { %>
+                                            <option value="<%= channel.id %>" <%=channel.id===logChannelID ? 'selected'
+                                                : '' %>>
+                                                <%= channel.name %> (<%= channel.type %>)
+                                            </option>
+                                            <% }) %>
+                                                <option value="">Log Kanalını Kapat</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-primary mt-2">Kaydet</button>
+                                </form>
+                                <div id="logChannelStatus" style="margin-top: 10px; font-weight: 600;"></div>
+                            </div>
+
+
+
+                        </div>
+                        <div class="card mt-4">
+                            <h3><i class="fa-solid fa-calendar-days"></i> Olay Takvimi</h3>
+                            <div id="eventCalendar"></div>
+                        </div>
+
+                        <div class="custom-command-section">
+                            <h2><i class="fa-solid fa-terminal"></i> Özel Komutlar
+                                <span class="cmd-count">(<%= customCommandCount %> komut)</span>
+                            </h2>
+
+                            <!-- Önizleme Alanı -->
+
+                            <div id="embedPreviewContainer" style="display: none;">
+                                <label>Önizleme:</label>
+                                <div id="embedPreview" class="embed-box">
+                                    <div class="embed-color-bar"></div>
+                                    <div class="embed-content">
+                                        <div class="embed-title" id="previewTitle">Embed Başlığı</div>
+                                        <div class="embed-description" id="previewDescription">Açıklama buraya gelecek
+                                        </div>
+                                        <div class="embed-footer" id="previewFooter">Footer (isteğe bağlı)</div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <style>
+                                #embedPreviewContainer {
+                                    margin-top: 20px;
+                                }
+
+                                .embed-box {
+                                    display: flex;
+                                    border: 1px solid #444;
+                                    border-radius: 8px;
+                                    background-color: #2c2f48;
+                                    overflow: hidden;
+                                    box-shadow: 0 0 12px rgba(0, 0, 0, 0.4);
+                                }
+
+                                .embed-color-bar {
+                                    width: 6px;
+                                    background-color: #5865f2;
+                                }
+
+                                .embed-content {
+                                    padding: 10px 14px;
+                                    color: #fff;
+                                    flex-grow: 1;
+                                }
+
+                                .embed-title {
+                                    font-weight: bold;
+                                    font-size: 1.1rem;
+                                    color: #ffffff;
+                                }
+
+                                .embed-description {
+                                    margin-top: 6px;
+                                    font-size: 0.95rem;
+                                    color: #dddddd;
+                                }
+
+                                .embed-footer {
+                                    margin-top: 12px;
+                                    font-size: 0.8rem;
+                                    color: #888888;
+                                    border-top: 1px solid #444;
+                                    padding-top: 6px;
+                                }
+                            </style>
+
+                            <form action="/custom-commands" method="POST" class="custom-command-form">
+                                <label for="command">Komut (örnek: sa)</label>
+                                <input type="text" name="command" id="command" placeholder="Komut girin..." required />
+
+                                <label for="response">Yanıt / Embed Açıklama</label>
+                                <textarea name="response" id="response" placeholder="Botun vereceği yanıt..."
+                                    required></textarea>
+
+                                <label for="type">Komut Türü</label>
+                                <select name="type" id="type">
+                                    <option value="text">Metin</option>
+                                    <option value="embed">Embed</option>
+                                    <option value="image">Görsel</option>
+                                </select>
+
+                                <div id="imageUrlField" style="display: none;">
+                                    <label for="imageUrl">Görsel URL</label>
+                                    <input type="url" name="imageUrl" id="imageUrl"
+                                        placeholder="https://example.com/image.png" />
+                                </div>
+
+
+                                <div id="embedFields" style="display: none;">
+                                    <label for="embedTitle">Embed Başlığı</label>
+                                    <input type="text" name="embedTitle" id="embedTitle"
+                                        placeholder="Embed başlığı girin..." />
+
+                                    <label for="embedColor">Embed Renk (HEX)</label>
+                                    <input type="color" name="embedColor" id="embedColor" value="#5865f2" />
+
+                                    <label for="embedFooter">Embed Footer (Alt Bilgi)</label>
+                                    <input type="text" name="embedFooter" id="embedFooter"
+                                        placeholder="Alt bilgi (isteğe bağlı)" />
+                                </div>
+
+                                <button type="submit"><i class="fa-solid fa-plus"></i> Ekle</button>
+                            </form>
+
+                            <div id="cmdStatusMsg" style="margin-top: 15px; font-weight: bold;"></div>
+                        </div>
+
+                        <style>
+                            .custom-command-section {
+                                margin-top: 40px;
+                                background: #1a1a2e;
+                                padding: 30px;
+                                border-radius: 12px;
+                                box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
+                                max-width: 650px;
+                                margin-left: auto;
+                                margin-right: auto;
+                                color: #eaeaea;
+                            }
+
+                            .custom-command-section h2 {
+                                text-align: center;
+                                color: #ffffff;
+                                margin-bottom: 25px;
+                                font-size: 1.6rem;
+                                border-bottom: 2px solid #5865F2;
+                                padding-bottom: 10px;
+                            }
+
+                            .cmd-count {
+                                font-size: 0.9rem;
+                                color: #999;
+                            }
+
+                            .custom-command-form {
+                                display: flex;
+                                flex-direction: column;
+                                gap: 15px;
+                            }
+
+                            .custom-command-form label {
+                                font-weight: bold;
+                                color: #cccccc;
+                            }
+
+                            .custom-command-form input,
+                            .custom-command-form select,
+                            .custom-command-form textarea {
+                                background-color: #2c2f48;
+                                color: #ffffff;
+                                border: 1px solid #444;
+                                border-radius: 8px;
+                                padding: 10px;
+                                font-size: 1rem;
+                                resize: vertical;
+                            }
+
+                            .custom-command-form textarea {
+                                min-height: 100px;
+                            }
+
+                            .custom-command-form button {
+                                background-color: #5865F2;
+                                color: #fff;
+                                border: none;
+                                border-radius: 8px;
+                                padding: 12px;
+                                font-size: 1rem;
+                                font-weight: bold;
+                                cursor: pointer;
+                                transition: background-color 0.3s ease;
+                            }
+
+                            .custom-command-form button:hover {
+                                background-color: #4752c4;
+                            }
+                        </style>
+
+
+                        <script>
+                            document.getElementById("logChannelForm").addEventListener("submit", async function (e) {
+                                e.preventDefault();
+
+                                const channelID = document.getElementById("channelID").value;
+                                const statusEl = document.getElementById("logChannelStatus");
+                                statusEl.innerText = "Kaydediliyor...";
+
+                                try {
+                                    const response = await fetch("/log-channel-settings", {
+                                        method: "POST",
+                                        headers: {
+                                            "Content-Type": "application/json"
+                                        },
+                                        body: JSON.stringify({ channelID })
+                                    });
+
+                                    const result = await response.json();
+
+                                    if (result.success) {
+                                        statusEl.innerHTML = `<span style="color:limegreen;">✅ ${result.message}</span>`;
+                                    } else {
+                                        statusEl.innerHTML = `<span style="color:crimson;">❌ ${result.message || 'Bir hata oluştu.'}</span>`;
+                                    }
+                                } catch (err) {
+                                    console.error("Log ayar hatası:", err);
+                                    statusEl.innerHTML = `<span style="color:red;">❌ Sunucuya bağlanılamadı.</span>`;
+                                }
+                            });
+                        </script>
+
+
+
+                        <div id="cmdStatusMsg" style="margin-top: 10px; font-weight: bold;"></div>
+                        <script>
+                            document.addEventListener("DOMContentLoaded", () => {
+                                const cmdForm = document.querySelector('.custom-command-form');
+                                const statusMsg = document.getElementById('cmdStatusMsg');
+                                const typeSelect = document.getElementById('type');
+                                const imageUrlField = document.getElementById('imageUrlField');
+                                const embedFields = document.getElementById('embedFields');
+                                const responseField = document.getElementById('response');
+                                const previewContainer = document.getElementById('embedPreviewContainer');
+
+
+                                const previewTitle = document.getElementById('previewTitle');
+                                const previewDescription = document.getElementById('previewDescription');
+                                const previewFooter = document.getElementById('previewFooter');
+                                const previewColorBar = document.querySelector('.embed-color-bar');
+
+
+                                const embedTitleInput = document.getElementById('embedTitle');
+                                const embedColorInput = document.getElementById('embedColor');
+                                const embedFooterInput = document.getElementById('embedFooter');
+
+
+                                handleTypeChange(typeSelect.value);
+
+                                typeSelect.addEventListener('change', () => {
+                                    handleTypeChange(typeSelect.value);
+                                });
+
+                                function handleTypeChange(value) {
+                                    if (value === 'image') {
+                                        imageUrlField.style.display = 'block';
+                                        embedFields.style.display = 'none';
+                                        previewContainer.style.display = 'none';
+                                        responseField.placeholder = "Mesajla birlikte gönderilecek açıklama (isteğe bağlı)";
+                                        responseField.required = false;
+                                    } else if (value === 'embed') {
+                                        imageUrlField.style.display = 'none';
+                                        embedFields.style.display = 'block';
+                                        previewContainer.style.display = 'block';
+                                        responseField.placeholder = "Embed açıklaması...";
+                                        responseField.required = true;
+                                    } else {
+                                        imageUrlField.style.display = 'none';
+                                        embedFields.style.display = 'none';
+                                        previewContainer.style.display = 'none';
+                                        responseField.placeholder = "Botun vereceği yanıt...";
+                                        responseField.required = true;
+                                    }
+                                }
+
+
+                                responseField.addEventListener('input', () => {
+                                    previewDescription.textContent = responseField.value || "Açıklama buraya gelecek";
+                                });
+
+                                embedTitleInput.addEventListener('input', () => {
+                                    previewTitle.textContent = embedTitleInput.value || "Embed Başlığı";
+                                });
+
+                                embedColorInput.addEventListener('input', () => {
+                                    previewColorBar.style.backgroundColor = embedColorInput.value || "#5865f2";
+                                });
+
+                                embedFooterInput.addEventListener('input', () => {
+                                    previewFooter.textContent = embedFooterInput.value || "Footer (isteğe bağlı)";
+                                });
+
+
+                                cmdForm.addEventListener('submit', async (e) => {
+                                    e.preventDefault();
+
+
+                                    const data = {
+                                        command: document.getElementById("command").value,
+                                        response: document.getElementById("response").value,
+                                        type: document.getElementById("type").value,
+                                        imageUrl: document.getElementById("imageUrl").value,
+                                        embedTitle: document.getElementById("embedTitle").value,
+                                        embedColor: document.getElementById("embedColor").value,
+                                        embedFooter: document.getElementById("embedFooter").value
+                                    };
+
+                                    try {
+                                        const res = await fetch('/custom-commands', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify(data)
+                                        });
+
+                                        const result = await res.json();
+                                        statusMsg.textContent = result.message;
+                                        statusMsg.style.color = result.success ? 'lime' : 'red';
+
+                                        if (result.success) {
+                                            cmdForm.reset();
+                                            imageUrlField.style.display = 'none';
+                                            embedFields.style.display = 'none';
+                                            previewContainer.style.display = 'none';
+                                            previewTitle.textContent = "Embed Başlığı";
+                                            previewDescription.textContent = "Açıklama buraya gelecek";
+                                            previewFooter.textContent = "Footer (isteğe bağlı)";
+                                            previewColorBar.style.backgroundColor = "#5865f2";
+                                        }
+                                    } catch (err) {
+                                        statusMsg.textContent = "Beklenmeyen bir hata oluştu.";
+                                        statusMsg.style.color = 'red';
+                                    }
+                                });
+                            });
+                        </script>
+
+
+                        <form id="announcementForm" class="announcement-settings">
+
+                            <div class="icon-label">
+                                <i class="fas fa-hashtag"></i>
+                                <label for="channelID">Duyuru Kanalı</label>
+                            </div>
+                            <select name="channelID" id="channelID" required>
+                                <option value="">Kanal Seçin</option>
+                                <% channels.forEach(ch=> { %>
+                                    <option value="<%= ch.id %>" <%=announcement.channelID===ch.id ? 'selected' : '' %>>
+                                        <%= ch.name %>
+                                    </option>
+                                    <% }) %>
+                            </select>
+
+                            <div class="icon-label" style="margin-top: 15px;">
+                                <i class="fas fa-envelope-open-text"></i>
+                                <label for="message">Duyuru Mesajı</label>
+                            </div>
+                            <textarea id="message" required rows="4"><%= announcement.message %></textarea>
+
+                            <button type="submit"><i class="fas fa-paper-plane"></i> Kaydet ve Gönder</button>
+                        </form>
+
+                        <p id="announcementStatus" style="margin-top: 10px; font-weight: bold;"></p>
+
+
+                        <link rel="stylesheet"
+                            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+
+
+
+
+                        <script>
+                            document.getElementById("announcementForm").addEventListener("submit", async (e) => {
+                                e.preventDefault();
+
+                                const status = document.getElementById("announcementStatus");
+                                const channelID = document.getElementById("channelID").value;
+                                const message = document.getElementById("message").value;
+
+                                try {
+                                    const res = await fetch("/announcement-settings", {
+                                        method: "POST",
+                                        headers: {
+                                            "Content-Type": "application/json"
+                                        },
+                                        body: JSON.stringify({ channelID, message })
+                                    });
+
+                                    const result = await res.json();
+
+                                    if (result.success) {
+                                        status.textContent = "✅ Duyuru başarıyla gönderildi!";
+                                        status.style.color = "limegreen";
+                                        document.getElementById("message").value = "";
+                                    } else {
+                                        status.textContent = "❌ Hata: " + result.message;
+                                        status.style.color = "red";
+                                    }
+                                } catch (err) {
+                                    status.textContent = "❌ Sunucu hatası: " + err.message;
+                                    status.style.color = "red";
+                                }
+                            });
+                        </script>
+
+
+                        <style>
+                            .announcement-settings {
+                                background: linear-gradient(145deg, #1f2235, #2a2d45);
+                                padding: 30px;
+                                border-radius: 16px;
+                                box-shadow: 0 4px 25px rgba(88, 101, 242, 0.3);
+                                max-width: 600px;
+                                margin: 50px auto;
+                                color: #eaeaea;
+                                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                                position: relative;
+                                overflow: hidden;
+                            }
+
+                            .announcement-settings::before {
+                                content: "";
+                                position: absolute;
+                                top: -50%;
+                                left: -50%;
+                                width: 200%;
+                                height: 200%;
+                                background: radial-gradient(circle at center, #5865f220, transparent);
+                                animation: rotateBG 20s linear infinite;
+                                z-index: 0;
+                            }
+
+                            @keyframes rotateBG {
+                                0% {
+                                    transform: rotate(0deg);
+                                }
+
+                                100% {
+                                    transform: rotate(360deg);
+                                }
+                            }
+
+                            .announcement-settings * {
+                                position: relative;
+                                z-index: 1;
+                            }
+
+                            .announcement-settings h2 {
+                                color: #5865f2;
+                                text-align: center;
+                                margin-bottom: 25px;
+                                font-size: 1.8rem;
+                            }
+
+                            .announcement-settings label {
+                                font-weight: bold;
+                                margin-top: 20px;
+                                display: block;
+                                margin-bottom: 5px;
+                                color: #ccc;
+                            }
+
+                            .announcement-settings select,
+                            .announcement-settings textarea {
+                                width: 100%;
+                                padding: 12px;
+                                border-radius: 10px;
+                                border: 1px solid #3b3f58;
+                                background-color: #2c2f48;
+                                color: #eaeaea;
+                                font-size: 1rem;
+                                font-family: inherit;
+                                resize: vertical;
+                                transition: border-color 0.3s ease;
+                            }
+
+                            .announcement-settings select:focus,
+                            .announcement-settings textarea:focus {
+                                border-color: #5865f2;
+                                outline: none;
+                            }
+
+                            .announcement-settings button {
+                                margin-top: 25px;
+                                width: 100%;
+                                padding: 14px;
+                                background: #5865f2;
+                                border: none;
+                                border-radius: 10px;
+                                color: white;
+                                font-weight: bold;
+                                font-size: 1.1rem;
+                                cursor: pointer;
+                                transition: background 0.3s ease, transform 0.2s ease;
+                            }
+
+                            .announcement-settings button i {
+                                margin-right: 8px;
+                            }
+
+                            .announcement-settings button:hover {
+                                background: #4752c4;
+                                transform: scale(1.03);
+                            }
+
+                            .saved-msg {
+                                margin-top: 20px;
+                                text-align: center;
+                                color: #00ff88;
+                                font-weight: bold;
+                                font-size: 1rem;
+                                animation: fadeIn 0.8s ease;
+                            }
+
+                            @keyframes fadeIn {
+                                from {
+                                    opacity: 0;
+                                    transform: translateY(10px);
+                                }
+
+                                to {
+                                    opacity: 1;
+                                    transform: translateY(0);
+                                }
+                            }
+
+                            .announcement-settings .icon-label {
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                                margin-bottom: 6px;
+                            }
+
+                            .announcement-settings .icon-label i {
+                                color: #5865f2;
+                            }
+                        </style>
+
+
+                        <!-- Butonlar -->
+                        <div class="card d-flex flex-row gap-3">
+                            <button id="btnEnable" class="btn btn-primary flex-grow-1" <%=guardEnabled ? 'disabled' : ''
+                                %>>
+                                <i class="fa-solid fa-toggle-on"></i> Guard Aktif Et
+                            </button>
+                            <button id="btnDisable" class="btn btn-danger flex-grow-1" <%=!guardEnabled ? 'disabled'
+                                : '' %>>
+                                <i class="fa-solid fa-toggle-off"></i> Guard Pasif Et
+                            </button>
+                            <button id="btnBackup" class="btn btn-secondary flex-grow-1">
+                                <i class="fa-solid fa-floppy-disk"></i> Yedek Al
+                            </button>
+                        </div>
+
+                        <div id="statusMsg" class="status-message"></div>
+                        <% } %>
+            </div>
+            <script>
+                const btnEnable = document.getElementById('btnEnable');
+                const btnDisable = document.getElementById('btnDisable');
+                const btnBackup = document.getElementById('btnBackup');
+                const statusMsg = document.getElementById('statusMsg');
+                const guardStatus = document.getElementById('guardStatus');
+
+                function updateStatus(message, success = true) {
+                    statusMsg.textContent = message;
+                    statusMsg.style.color = success ? '#0f0' : '#f00';
+                }
+
+                btnEnable.addEventListener('click', async () => {
+                    updateStatus('Guard aktif ediliyor...');
+                    btnEnable.disabled = true;
+                    btnDisable.disabled = true;
+                    const res = await fetch('/toggle-guard', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'state=enable'
+                    });
+                    if (res.ok) {
+                        updateStatus('Guard başarıyla aktifleştirildi!');
+                        guardStatus.textContent = 'Aktif';
+                        guardStatus.className = 'badge bg-success';
+                        btnEnable.disabled = true;
+                        btnDisable.disabled = false;
+                    } else {
+                        updateStatus('Guard aktif ederken hata oluştu!', false);
+                        btnEnable.disabled = false;
+                        btnDisable.disabled = false;
+                    }
+                });
+
+                btnDisable.addEventListener('click', async () => {
+                    updateStatus('Guard pasif ediliyor...');
+                    btnEnable.disabled = true;
+                    btnDisable.disabled = true;
+                    const res = await fetch('/toggle-guard', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'state=disable'
+                    });
+                    if (res.ok) {
+                        updateStatus('Guard başarıyla devre dışı bırakıldı!');
+                        guardStatus.textContent = 'Pasif';
+                        guardStatus.className = 'badge bg-danger';
+                        btnEnable.disabled = false;
+                        btnDisable.disabled = true;
+                    } else {
+                        updateStatus('Guard pasif ederken hata oluştu!', false);
+                        btnEnable.disabled = false;
+                        btnDisable.disabled = false;
+                    }
+                });
+
+                btnBackup.addEventListener('click', async () => {
+                    updateStatus('Yedek alınıyor...');
+                    btnBackup.disabled = true;
+                    const res = await fetch('/backup', { method: 'POST' });
+                    if (res.ok) {
+                        updateStatus('Yedek başarıyla alındı!');
+                    } else {
+                        updateStatus('Yedek alırken hata oluştu!', false);
+                    }
+                    btnBackup.disabled = false;
+                });
+
+
+
+                const addSafeUserForm = document.getElementById('addSafeUserForm');
+                const safeUserIdInput = document.getElementById('safeUserIdInput');
+                const safeUsersList = document.getElementById('safeUsersList');
+
+                addSafeUserForm.addEventListener('submit', async () => {
+                    const userId = safeUserIdInput.value.trim();
+                    if (!userId) return;
+
+                    updateStatus('Kullanıcı ekleniyor...');
+
+                    try {
+                        const res = await fetch('/api/safe/add', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: userId })
+                        });
+
+                        if (res.ok) {
+                            updateStatus('Kullanıcı başarıyla eklendi!');
+                            safeUserIdInput.value = '';
+
+                            await refreshSafeUsersList();
+                        } else {
+                            const data = await res.json();
+                            updateStatus(`Hata: ${data.error || 'Kullanıcı eklenemedi.'}`, false);
+                        }
+                    } catch (error) {
+                        updateStatus('Sunucu hatası oluştu!', false);
+                    }
+                });
+
+
+                safeUsersList.addEventListener('click', async (e) => {
+                    if (!e.target.closest('.btn-remove-safe-user')) return;
+                    const btn = e.target.closest('.btn-remove-safe-user');
+                    const userId = btn.getAttribute('data-id');
+                    if (!userId) return;
+
+                    if (!confirm('Bu kullanıcıyı safe listesinden kaldırmak istediğinize emin misiniz?')) return;
+
+                    updateStatus('Kullanıcı siliniyor...');
+                    try {
+                        const res = await fetch('/api/safe/remove', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: userId })
+                        });
+
+                        if (res.ok) {
+                            updateStatus('Kullanıcı başarıyla silindi!');
+                            await refreshSafeUsersList();
+                        } else {
+                            const data = await res.json();
+                            updateStatus(`Hata: ${data.error || 'Kullanıcı silinemedi.'}`, false);
+                        }
+                    } catch (error) {
+                        updateStatus('Sunucu hatası oluştu!', false);
+                    }
+                });
+
+
+                async function refreshSafeUsersList() {
+                    try {
+                        const res = await fetch('/api/safe/list');
+                        if (!res.ok) throw new Error('Liste alınamadı');
+                        const data = await res.json();
+
+                        if (data.safeUsers.length === 0) {
+                            safeUsersList.innerHTML = '<p>Safe listesi boş.</p>';
+                            return;
+                        }
+
+                        safeUsersList.innerHTML = '';
+
+                        data.safeUsers.forEach(user => {
+                            const div = document.createElement('div');
+                            div.className = 'user-card';
+                            div.setAttribute('data-id', user.id);
+                            div.innerHTML = `
+        <button class="btn btn-sm btn-danger btn-remove-safe-user" data-id="${user.id}" title="Safe listesinden kaldır">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+        <img src="${user.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" alt="Avatar" class="avatar" />
+        <div class="user-info">
+          <div class="username" title="${user.tag || 'Bilinmeyen Kullanıcı'}">${user.tag || 'Bilinmeyen Kullanıcı'}</div>
+          <div class="userid"><code>${user.id}</code></div>
+        </div>
+      `;
+                            safeUsersList.appendChild(div);
+                        });
+                    } catch (err) {
+                        updateStatus('Safe kullanıcılar yenilenirken hata oluştu!', false);
+                    }
+                }
+
+
+            </script>
+            <script>
+                document.querySelectorAll('.btn-toggle').forEach(button => {
+                    button.addEventListener('click', async () => {
+                        const settingItem = button.closest('.setting-item');
+                        const settingKey = settingItem.dataset.setting;
+                        const isActive = button.classList.contains('active');
+
+
+                        const newValue = !isActive;
+
+
+                        button.disabled = true;
+
+                        try {
+
+                            const res = await fetch('/api/guard-settings', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    [settingKey]: newValue
+                                }),
+                            });
+
+                            if (!res.ok) throw new Error('Güncelleme başarısız!');
+
+                            const data = await res.json();
+
+
+                            button.textContent = newValue ? 'Açık' : 'Kapalı';
+                            button.classList.toggle('active', newValue);
+                            button.classList.toggle('inactive', !newValue);
+
+
+                            updateStatus(`${settingKeyToLabel(settingKey)} ${newValue ? 'aktif edildi!' : 'pasif edildi!'}`);
+
+
+                            updateActiveSettingsList(data.data);
+
+                        } catch (error) {
+                            updateStatus('Güncelleme hatası!', false);
+                        }
+
+                        button.disabled = false;
+                    });
+                });
+
+                function updateStatus(message, success = true) {
+                    const statusMsg = document.getElementById('statusMsg');
+                    statusMsg.textContent = message;
+                    statusMsg.style.color = success ? 'green' : 'red';
+                }
+
+
+                function settingKeyToLabel(key) {
+                    switch (key) {
+                        case 'kanalKoruma': return 'Kanal Koruma';
+                        case 'rolKoruma': return 'Rol Koruma';
+                        case 'emojiKoruma': return 'Emoji Koruma';
+                        case 'banKickKoruma': return 'Ban/Kick Koruma';
+                        default: return key;
+                    }
+                }
+
+
+                function updateActiveSettingsList(settings) {
+                    const ul = document.querySelector('#activeSettings ul');
+                    ul.innerHTML = '';
+
+                    let anyActive = false;
+                    ['kanalKoruma', 'rolKoruma', 'emojiKoruma', 'banKickKoruma'].forEach(key => {
+                        if (settings[key]) {
+                            anyActive = true;
+                            const li = document.createElement('li');
+                            li.textContent = settingKeyToLabel(key);
+                            ul.appendChild(li);
+                        }
+                    });
+
+                    if (!anyActive) {
+                        const li = document.createElement('li');
+                        li.textContent = 'Hiçbir ayar aktif değil.';
+                        ul.appendChild(li);
+                    }
+                }
+
+
+
+
+            </script>
+
+            <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const calendarEl = document.getElementById('eventCalendar');
+
+                    const aktifAyarlar = [
+                        { key: 'kanalKoruma', title: 'Kanal Koruma' },
+                        { key: 'rolKoruma', title: 'Rol Koruma' },
+                        { key: 'emojiKoruma', title: 'Emoji Koruma' },
+                        { key: 'bankickkoruma', title: 'Ban Koruma' }
+                    ];
+
+                    const today = new Date().toISOString().split('T')[0];
+
+                    const events = aktifAyarlar.map((ayar, index) => ({
+                        title: `${ayar.title} Aktif`,
+                        start: today,
+                        color: ['#3a86ff', '#00c853', '#ff6f00'][index % 3]
+                    }));
+
+                    const calendar = new FullCalendar.Calendar(calendarEl, {
+                        initialView: 'dayGridMonth',
+                        height: 500,
+                        themeSystem: 'bootstrap5',
+                        events: events,
+                        headerToolbar: {
+                            start: 'title',
+                            center: '',
+                            end: 'prev,next today'
+                        },
+                        buttonText: {
+                            today: 'Bugün'
+                        }
+                    });
+
+                    calendar.render();
+                });
+            </script>
+
+
+            <script>
+                let roles = JSON.parse(localStorage.getItem('roles')) || [];
+
+                function saveRolesToStorage() {
+                    localStorage.setItem('roles', JSON.stringify(roles));
+                }
+
+                function renderRoles() {
+                    const tbody = document.getElementById('rolesTableBody');
+                    tbody.innerHTML = '';
+                    roles.forEach((role, i) => {
+                        tbody.innerHTML += `<tr>
+        <td>${role.name}</td>
+        <td><div style="width:20px;height:20px;background:${role.color};border-radius:4px;"></div></td>
+        <td>${role.permissions.join(', ')}</td>
+       <td><button class="btn btn-sm btn-danger" onclick="deleteRole(${i}, '${role.id}')">Sil</button></td>
+
+      </tr>`;
+                    });
+                }
+
+                async function deleteRole(index, roleId) {
+
+                    try {
+                        const response = await fetch(`/api/delete-role/${roleId}`, {
+                            method: 'DELETE'
+                        });
+                        const result = await response.json();
+                        if (response.ok) {
+                            roles.splice(index, 1);
+                            saveRolesToStorage();
+                            renderRoles();
+                            alert('Rol başarıyla silindi.');
+                        } else {
+                            alert('Sunucudan silinirken hata oluştu: ' + result.message);
+                        }
+                    } catch (err) {
+                        alert('Sunucuya bağlanırken hata oluştu.');
+                        console.error(err);
+                    }
+                }
+
+                document.getElementById('roleForm').addEventListener('submit', async e => {
+                    e.preventDefault();
+                    const name = e.target.roleName.value.trim();
+                    const color = e.target.roleColor.value;
+                    const permissions = Array.from(e.target.perm)
+                        .filter(chk => chk.checked)
+                        .map(chk => chk.value);
+
+                    if (!name || permissions.length === 0) {
+                        alert('Lütfen rol adı ve en az bir yetki seçin.');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('/api/create-role', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name, color, permissions })
+                        });
+
+                        const data = await response.json();
+                        if (response.ok) {
+                            alert(`Rol başarıyla oluşturuldu: ${data.roleName}`);
+                            roles.push({
+                                name,
+                                color,
+                                permissions,
+                                id: data.roleId
+                            });
+                            saveRolesToStorage();
+                            renderRoles();
+                            e.target.reset();
+                        } else {
+                            alert(`Hata: ${data.message}`);
+                        }
+                    } catch (err) {
+                        alert('Sunucu ile bağlantı kurulamadı.');
+                        console.error(err);
+                    }
+                });
+
+                renderRoles();
+            </script>
+
+            <script>
+                async function fetchRoles() {
+                    try {
+                        const res = await fetch('/api/roles');
+                        const data = await res.json();
+
+                        const container = document.getElementById('roleCardsContainer');
+                        container.innerHTML = '';
+
+                        data.roles.sort((a, b) => b.position - a.position);
+
+                        data.roles.forEach(role => {
+                            const card = document.createElement('div');
+                            card.className = 'role-card';
+
+                            card.innerHTML = `
+        <div class="role-name">
+          <span class="role-color" style="background: ${role.color};"></span>
+          ${role.name}
+        </div>
+        <div class="permissions-list">
+          ${role.permissions.length ? role.permissions.join(', ') : '<i>Yetki yok</i>'}
+        </div>
+      `;
+
+                            container.appendChild(card);
+                        });
+                    } catch (err) {
+                        console.error('Roller alınamadı:', err);
+                    }
+                }
+
+                document.addEventListener('DOMContentLoaded', fetchRoles);
+            </script>
+
+
+
+</body>
+
+</html>

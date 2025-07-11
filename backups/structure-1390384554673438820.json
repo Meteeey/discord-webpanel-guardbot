@@ -1,0 +1,131 @@
+{
+  "guildID": "1390384554673438820",
+  "guildName": "Guard Test",
+  "createdAt": "2025-07-11T11:27:17.465Z",
+  "roles": [
+    {
+      "name": "Bot",
+      "color": 0,
+      "hoist": true,
+      "permissions": "1032",
+      "mentionable": false,
+      "position": 10
+    },
+    {
+      "name": "Bot",
+      "color": 0,
+      "hoist": true,
+      "permissions": "8",
+      "mentionable": false,
+      "position": 9
+    },
+    {
+      "name": "admin",
+      "color": 0,
+      "hoist": true,
+      "permissions": "8",
+      "mentionable": false,
+      "position": 8
+    },
+    {
+      "name": "admin",
+      "color": 0,
+      "hoist": true,
+      "permissions": "8",
+      "mentionable": false,
+      "position": 7
+    },
+    {
+      "name": "Booster",
+      "color": 15277667,
+      "hoist": true,
+      "permissions": "0",
+      "mentionable": false,
+      "position": 6
+    },
+    {
+      "name": "Booster",
+      "color": 15277667,
+      "hoist": true,
+      "permissions": "0",
+      "mentionable": false,
+      "position": 5
+    },
+    {
+      "name": "yeni rol",
+      "color": 0,
+      "hoist": false,
+      "permissions": "0",
+      "mentionable": false,
+      "position": 3
+    },
+    {
+      "name": "yeni rol",
+      "color": 0,
+      "hoist": false,
+      "permissions": "0",
+      "mentionable": false,
+      "position": 2
+    },
+    {
+      "name": "mutixzyasd",
+      "color": 16711680,
+      "hoist": false,
+      "permissions": "16",
+      "mentionable": false,
+      "position": 1
+    }
+  ],
+  "channels": [
+    {
+      "name": "Metin Kanalları",
+      "type": 4,
+      "parent": null,
+      "position": 0,
+      "topic": null,
+      "nsfw": false,
+      "rateLimitPerUser": 0,
+      "permissionOverwrites": []
+    },
+    {
+      "name": "Ses Kanalları",
+      "type": 4,
+      "parent": null,
+      "position": 0,
+      "topic": null,
+      "nsfw": false,
+      "rateLimitPerUser": 0,
+      "permissionOverwrites": []
+    },
+    {
+      "name": "Genel",
+      "type": 2,
+      "parent": "Ses Kanalları",
+      "position": 0,
+      "topic": null,
+      "nsfw": false,
+      "rateLimitPerUser": 0,
+      "permissionOverwrites": []
+    },
+    {
+      "name": "log",
+      "type": 0,
+      "parent": null,
+      "position": 5,
+      "topic": null,
+      "nsfw": false,
+      "rateLimitPerUser": 0,
+      "permissionOverwrites": []
+    },
+    {
+      "name": "test",
+      "type": 0,
+      "parent": "Metin Kanalları",
+      "position": 6,
+      "topic": null,
+      "nsfw": false,
+      "rateLimitPerUser": 0,
+      "permissionOverwrites": []
+    }
+  ]
+}
